@@ -32,7 +32,7 @@
     <Authors>gjkaal</Authors>
     <Description>Dociument management and process information services</Description>
     <IncludeSymbols>False</IncludeSymbols>
-    <PackageVersion>1.0.10</PackageVersion>
+    <PackageVersion>1.0.10-pre0807</PackageVersion>
     <PackageLicenseExpression>AFL-3.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/kaalenco/n2-logging</PackageProjectUrl>
     <PackageId>N2.Documents</PackageId>
