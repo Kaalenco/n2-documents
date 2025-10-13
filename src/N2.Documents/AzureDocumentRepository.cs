@@ -9,25 +9,27 @@ using N2.Core.Identity;
 namespace N2.Documents;
 
 /// <summary>
-/// Azure Table Storage implementation of <see cref="IDocumentRepository"/> for document metadata.
+/// Azure Table Storage implementation of <see cref="IDocumentRepository" /> for document metadata.
 /// </summary>
 /// <remarks>
-/// This implementation eagerly loads all recent documents (Timestamp &gt;= configured lower bound) into an in-memory cache
-/// on first access. It is therefore best suited for SMALL data sets (e.g. a few thousand documents) where
-/// low-latency, repeated in-process querying outweighs memory usage.
+/// This implementation eagerly loads all recent documents (Timestamp &gt;= configured lower bound)
+/// into an in-memory cache on first access. It is therefore best suited for SMALL data sets (e.g. a
+/// few thousand documents) where low-latency, repeated in-process querying outweighs memory usage.
 /// For LARGE data sets this approach can:
-///  - Increase memory pressure (entire entity set lives in one list)
-///  - Add latency during first access (bulk load)
-///  - Make filtered queries less efficient (LINQ over in-memory list instead of server side)
-///  - Risk stale views if other writers modify the table (cache only invalidated by local writes)
+/// - Increase memory pressure (entire entity set lives in one list)
+/// - Add latency during first access (bulk load)
+/// - Make filtered queries less efficient (LINQ over in-memory list instead of server side)
+/// - Risk stale views if other writers modify the table (cache only invalidated by local writes)
 ///
 /// TODO: Improve scalability:
-///  - Replace full-cache strategy with segmented / demand-driven loading (e.g. per PublicId lookup first, then selective hydration)
-///  - Add size / count threshold to disable caching automatically
-///  - Introduce sliding expiration or background refresh with ETag comparison
-///  - Provide server-side query pass-through for larger filtered queries
-///  - Consider an index structure (e.g. ConcurrentDictionary&lt;Guid, Document&gt;) for faster existence checks / lookups
-///  - Support asynchronous lazy initialization to avoid blocking callers on first access
+/// - Replace full-cache strategy with segmented / demand-driven loading (e.g. per PublicId lookup
+///   first, then selective hydration)
+/// - Add size / count threshold to disable caching automatically
+/// - Introduce sliding expiration or background refresh with ETag comparison
+/// - Provide server-side query pass-through for larger filtered queries
+/// - Consider an index structure (e.g. ConcurrentDictionary&lt;Guid, Document&gt;) for faster
+///   existence checks / lookups
+/// - Support asynchronous lazy initialization to avoid blocking callers on first access
 /// </remarks>
 public class AzureDocumentRepository : IDocumentRepository
 {
@@ -41,9 +43,8 @@ public class AzureDocumentRepository : IDocumentRepository
     private readonly DateTime cacheSinceUtc; // Lower bound for Timestamp when priming cache
 
     /// <summary>
-    /// Creates the repository.
-    /// Optionally restricts the initial in-memory cache to entities with Timestamp >= <paramref name="cacheSinceUtc"/>.
-    /// If not provided, defaults to (UtcNow - 10 days).
+    /// Creates the repository. Optionally restricts the initial in-memory cache to entities with
+    /// Timestamp &gt;= <paramref name="cacheSinceUtc" />. If not provided, defaults to (UtcNow - 10 days).
     /// </summary>
     public AzureDocumentRepository(string storageConnectionString, string? tableName = null, DateTime? cacheSinceUtc = null)
     {
@@ -57,9 +58,8 @@ public class AzureDocumentRepository : IDocumentRepository
     }
 
     /// <summary>
-    /// A queryable set for document metadata.
-    /// Loads (and caches) documents whose Timestamp is newer than the configured threshold.
-    /// Subsequent updates refresh the cache after CompleteAsync.
+    /// A queryable set for document metadata. Loads (and caches) documents whose Timestamp is newer
+    /// than the configured threshold. Subsequent updates refresh the cache after CompleteAsync.
     /// NOTE: This is an in-memory LINQ over the cached collection, not a server-side query.
     /// </summary>
     public IQueryable<Document> DocumentQuery
@@ -322,10 +322,12 @@ public class AzureDocumentRepository : IDocumentRepository
     }
 
     private static string Join(string[]? values) => (values == null || values.Length == 0) ? "" : string.Join(';', values);
+
     private static string[] Split(string? value) => string.IsNullOrWhiteSpace(value) ? [] : value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     public Task Cleanup(CancellationToken token) => throw new NotImplementedException();
 
-    #endregion
+    #endregion Mapping
 
     /// <summary>
     /// Internal table entity representation.
@@ -339,6 +341,7 @@ public class AzureDocumentRepository : IDocumentRepository
 
         // Domain fields
         public Guid PublicId { get; set; }
+
         public string? Location { get; set; }
         public string? ExtensionGroup { get; set; }
         public string? Extension { get; set; }

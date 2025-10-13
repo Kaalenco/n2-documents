@@ -41,6 +41,9 @@ public class WithDocumentService
             .Setup(s => s.GetConfigSettings<DocumentServiceSettings>())
             .Returns(_settings);
 
+        // Common setup for SaveDocument (void) to satisfy Strict behavior in all tests that perform mutations.
+        _docRepositoryMock.Setup(r => r.SaveDocument(It.IsAny<Document>()));
+
         // Provide a default user context so any implicit access to PublicId / IsAdmin() is satisfied.
         _defaultUserId = Guid.NewGuid();
         _userContextMock.Setup(u => u.PublicId).Returns(_defaultUserId);
@@ -335,7 +338,6 @@ public class WithDocumentService
         _storageServiceMock.Setup(s => s.CreateDocumentAsync(
             It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<Dictionary<string, string>>()))
             .ReturnsAsync((new Uri("https://test.blob/doc"), "hash123"));
-        _docRepositoryMock.Setup(r => r.SaveDocument(It.IsAny<Document>()));
         _docRepositoryMock.Setup(r => r.CompleteAsync(_userContextMock.Object, token)).ReturnsAsync(1);
 
         var (success, info) = await _sut.SaveDocumentAsync(stream, form);
@@ -376,7 +378,6 @@ public class WithDocumentService
         _storageServiceMock.Setup(s => s.CreateDocumentAsync(
             It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<Dictionary<string, string>>()))
             .ReturnsAsync((new Uri("https://test.blob/doc"), "hash"));
-        _docRepositoryMock.Setup(r => r.SaveDocument(It.IsAny<Document>()));
         _docRepositoryMock.Setup(r => r.CompleteAsync(_userContextMock.Object, token)).ReturnsAsync(1);
 
         var (success, _) = await _sut.SaveDocumentAsync(stream, form);
@@ -494,7 +495,6 @@ public class WithDocumentService
     [Test]
     public void FindDocumentsAsync_ThrowsArgumentNullException_WhenSearchIsNull()
     {
-        // Act & Assert
         Assert.That(async () =>
             await _sut.FindDocumentsAsync(null!, new[] { "USER" }, "", false),
             Throws.TypeOf<ArgumentNullException>());
@@ -503,7 +503,6 @@ public class WithDocumentService
     [Test]
     public void FindDocumentsAsync_ThrowsArgumentNullException_WhenRolesIsNull()
     {
-        // Act & Assert
         Assert.That(async () =>
             await _sut.FindDocumentsAsync("", null!, "", false),
             Throws.TypeOf<ArgumentNullException>());
@@ -512,7 +511,6 @@ public class WithDocumentService
     [Test]
     public async Task FindDocumentsAsync_ReturnsAllDocuments_WhenUserIsAdmin()
     {
-        // Arrange
         var d1 = new Document
         {
             PublicId = Guid.NewGuid(),
@@ -547,17 +545,14 @@ public class WithDocumentService
         _userContextMock.Setup(u => u.PublicId).Returns(Guid.NewGuid());
         _docRepositoryMock.Setup(r => r.DocumentQuery).Returns(new[] { d1, d2 }.AsQueryable());
 
-        // Act
         var results = await _sut.FindDocumentsAsync("", new[] { "USER" }, "", false);
 
-        // Assert
         Assert.That(results.Count(), Is.EqualTo(2));
     }
 
     [Test]
     public async Task FindDocumentsAsync_FiltersDocumentsBySearch()
     {
-        // Arrange
         var d1 = new Document
         {
             PublicId = Guid.NewGuid(),
@@ -591,10 +586,8 @@ public class WithDocumentService
         _userContextMock.Setup(u => u.PublicId).Returns(Guid.NewGuid());
         _docRepositoryMock.Setup(r => r.DocumentQuery).Returns(new[] { d1, d2 }.AsQueryable());
 
-        // Act
         var results = await _sut.FindDocumentsAsync("important", new[] { "USER" }, "", false);
 
-        // Assert
         var list = results.ToList();
         Assert.Multiple(() =>
         {
@@ -606,7 +599,6 @@ public class WithDocumentService
     [Test]
     public async Task FindDocumentsAsync_ReturnsPrivateDocuments_OnlyForOwner()
     {
-        // Arrange
         var userId = Guid.NewGuid();
         var other = Guid.NewGuid();
         var mine = new Document
@@ -644,10 +636,8 @@ public class WithDocumentService
         _userContextMock.Setup(u => u.PublicId).Returns(userId);
         _docRepositoryMock.Setup(r => r.DocumentQuery).Returns(new[] { mine, others }.AsQueryable());
 
-        // Act
         var results = await _sut.FindDocumentsAsync("", new[] { "USER" }, "", false);
 
-        // Assert
         var list = results.ToList();
         Assert.Multiple(() =>
         {
@@ -659,7 +649,6 @@ public class WithDocumentService
     [Test]
     public async Task FindDocumentsAsync_FiltersDocumentsByProcessName()
     {
-        // Arrange
         var d1 = new Document
         {
             PublicId = Guid.NewGuid(),
@@ -695,10 +684,8 @@ public class WithDocumentService
         _userContextMock.Setup(u => u.PublicId).Returns(Guid.NewGuid());
         _docRepositoryMock.Setup(r => r.DocumentQuery).Returns(new[] { d1, d2 }.AsQueryable());
 
-        // Act
         var results = await _sut.FindDocumentsAsync("", new[] { "USER" }, "Process1", false);
 
-        // Assert
         var list = results.ToList();
         Assert.Multiple(() =>
         {
@@ -710,7 +697,6 @@ public class WithDocumentService
     [Test]
     public async Task FindDocumentsAsync_ExcludesInactiveDocuments_WhenShowInactiveIsFalse()
     {
-        // Arrange
         var active = new Document
         {
             PublicId = Guid.NewGuid(),
@@ -745,10 +731,8 @@ public class WithDocumentService
         var mockData = new[] { active, inactive };
         _docRepositoryMock.Setup(r => r.DocumentQuery).Returns(mockData.AsQueryable());
 
-        // Act
         var results = await _sut.FindDocumentsAsync("", new[] { "USER" }, "", false);
 
-        // Assert
         var list = results.ToList();
         Assert.Multiple(() =>
         {

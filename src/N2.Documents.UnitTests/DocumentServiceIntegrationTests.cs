@@ -44,19 +44,29 @@ public class DocumentServiceIntegrationTests
         }
 
         public TConfig GetConfigSettings<TConfig>(string sectionName) where TConfig : class, new() => throw new NotImplementedException();
+
         public string GetConnectionString(string name) => throw new NotImplementedException();
+
         public TValue GetSetting<TValue>(string name, TValue defaultValue) where TValue : struct => throw new NotImplementedException();
+
         public void Reload<T>() where T : class => throw new NotImplementedException();
     }
 
     private class NoopLogService : ILogService
     {
-        public void LogDebug<T>(string message) { TestContext.Progress.WriteLine($"DEBUG {typeof(T).Name}: {message}"); }
-        public void LogInformation<T>(string message) { TestContext.Progress.WriteLine($"INFO {typeof(T).Name}: {message}"); }
-        public void LogError<T>(string message) { TestContext.Progress.WriteLine($"ERR {typeof(T).Name}: {message}"); }
+        public void LogDebug<T>(string message)
+        { TestContext.Progress.WriteLine($"DEBUG {typeof(T).Name}: {message}"); }
+
+        public void LogInformation<T>(string message)
+        { TestContext.Progress.WriteLine($"INFO {typeof(T).Name}: {message}"); }
+
+        public void LogError<T>(string message)
+        { TestContext.Progress.WriteLine($"ERR {typeof(T).Name}: {message}"); }
 
         public void LogWarning<T>(string message) => throw new NotImplementedException();
+
         public void LogCritical<T>(string message) => throw new NotImplementedException();
+
         public void LogEvent<T>(string message, string category) => throw new NotImplementedException();
     }
 
@@ -116,8 +126,7 @@ public class DocumentServiceIntegrationTests
             // Remove blob container(s) we created (mainly "data")
             try
             {
-                //    var blobSvc = new BlobServiceClient(connectionString);
-                //    await blobSvc.GetBlobContainerClient("data").DeleteIfExistsAsync();
+                // var blobSvc = new BlobServiceClient(connectionString); await blobSvc.GetBlobContainerClient("data").DeleteIfExistsAsync();
             }
             catch { }
         }
@@ -276,8 +285,8 @@ public class DocumentServiceIntegrationTests
 
     private static string BuildBlobName(string documentLocation, string processName)
     {
-        // documentLocation e.g. "testprocess\\04\\03\\02\\01\\<guid>.txt"
-        // Blob path stored as "testprocess/04/03/02/01/<guid>.txt" inside container "data"
+        // documentLocation e.g. "testprocess\\04\\03\\02\\01\\<guid>.txt" Blob path stored as
+        // "testprocess/04/03/02/01/<guid>.txt" inside container "data"
         return processName.ToLowerInvariant() + '/' + documentLocation.Replace('\\', '/');
     }
 }

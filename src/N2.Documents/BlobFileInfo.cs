@@ -1,9 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+
 using Azure;
 using Azure.Storage.Blobs;
 
 using Microsoft.AspNetCore.StaticFiles;
-
-using System.Diagnostics.CodeAnalysis;
 
 namespace N2.Documents;
 
@@ -29,7 +29,7 @@ public class BlobFileInfo : IBinaryFileInfo
         {
             return;
         }
-        var n = FileName.LastIndexOf('.');
+        int n = FileName.LastIndexOf('.');
         if (n >= 0)
         {
             Extension = FileName[(n + 1)..];
@@ -68,13 +68,13 @@ public class BlobFileInfo : IBinaryFileInfo
     public string ContentType()
     {
         new FileExtensionContentTypeProvider()
-            .TryGetContentType(FileName, out var contentType);
+            .TryGetContentType(FileName, out string? contentType);
         return contentType ?? "application/octet-stream";
     }
 
     public async Task<string> UploadAsync(Stream data)
     {
-        var result = await blobClient.UploadAsync(data);
+        Response<Azure.Storage.Blobs.Models.BlobContentInfo> result = await blobClient.UploadAsync(data);
         return Convert.ToBase64String(result.Value.ContentHash);
     }
 }

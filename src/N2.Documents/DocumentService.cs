@@ -14,6 +14,7 @@ public class DocumentService : IDocumentService
     private readonly DocumentServiceSettings settings;
     private readonly IBinaryStorageService storageService;
     private readonly IUserContext userContext;
+
     public DocumentService(
         [NotNull] IBinaryStorageService storageService,
         [NotNull] IDocumentRepository docRepository,
