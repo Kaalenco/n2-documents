@@ -1,4 +1,4 @@
-﻿namespace N2.Documents;
+namespace N2.Documents;
 
 public class DocumentServiceSettings
 {

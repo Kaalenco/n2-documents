@@ -1,4 +1,5 @@
-﻿namespace N2.Documents.Exceptions;
+namespace N2.Documents.Exceptions;
+
 public class N2DocumentException : Exception
 {
     public int ErrorCode { get; protected set; } = 500;

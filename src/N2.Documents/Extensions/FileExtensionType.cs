@@ -1,4 +1,4 @@
-﻿namespace N2.Documents.Extensions;
+namespace N2.Documents.Extensions;
 
 public static class FileExtensionType
 {

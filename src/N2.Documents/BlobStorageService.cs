@@ -1,7 +1,9 @@
-﻿using Azure;
+using System.Globalization;
+
+using Azure;
+
 using N2.Core;
 using N2.Documents.Exceptions;
-using System.Globalization;
 
 namespace N2.Documents;
 #pragma warning disable CA1308 // use uppercase should not be used as blobstorage accepts only lowercase names
@@ -25,14 +27,14 @@ public class BlobStorageService : IBinaryStorageService
 
     public async Task<(Uri identifier, string md5Hash)> CreateDocumentAsync(Stream data, string fileIdentifier, Dictionary<string, string> metadata)
     {
-        var containerClient = await FindContainerClientAsync(fileIdentifier).ConfigureAwait(false);
+        IBlobContainerClient containerClient = await FindContainerClientAsync(fileIdentifier);
 
         if (!containerClient.ContainerExists())
         {
             throw new N2DocumentException($"Expected existing container: {containerClient.Container}");
         }
 
-        var (identifier, md5Hash) = await containerClient.UploadBlobAsync(data, metadata).ConfigureAwait(false);
+        (Uri identifier, string md5Hash) = await containerClient.UploadBlobAsync(data, metadata);
 
         return new(identifier, md5Hash);
     }
@@ -40,10 +42,10 @@ public class BlobStorageService : IBinaryStorageService
     private async Task<IBlobContainerClient> FindContainerClientAsync(string documentIdentifier)
     {
         documentIdentifier = documentIdentifier.ToLowerInvariant().Replace('/', '\\');
-        var filestart = documentIdentifier.LastIndexOf('\\');
-        var container = documentIdentifier[..filestart];
-        var fileName = documentIdentifier[(filestart + 1)..];
-        _ = await client.CreateIfNotExistsAsync(container).ConfigureAwait(false);
+        int filestart = documentIdentifier.LastIndexOf('\\');
+        string container = documentIdentifier[..filestart];
+        string fileName = documentIdentifier[(filestart + 1)..];
+        _ = await client.CreateIfNotExistsAsync(container);
         return client.GetBlobContainerClient(container, fileName);
     }
 
@@ -53,15 +55,15 @@ public class BlobStorageService : IBinaryStorageService
     {
         ArgumentException.ThrowIfNullOrEmpty(basePath);
         byte[] uChars = uuid.ToByteArray();
-        var parts = new string[10];
+        string[] parts = new string[10];
         basePath.ToLowerInvariant().Split(separator, StringSplitOptions.RemoveEmptyEntries).CopyTo(parts, 0);
-        var n = parts.TakeWhile(parts => parts != null).Count();
+        int n = parts.TakeWhile(parts => parts != null).Count();
         parts[n++] = uChars[0].ToString("x2", culture);
         parts[n++] = uChars[1].ToString("x2", culture);
         parts[n++] = uChars[2].ToString("x2", culture);
         parts[n++] = uChars[3].ToString("x2", culture);
 
-        var createdPath = string.Join('\\', parts, 0, n);
+        string createdPath = string.Join('\\', parts, 0, n);
         await client.CreateIfNotExistsAsync(createdPath);
 
         return createdPath;
@@ -69,13 +71,13 @@ public class BlobStorageService : IBinaryStorageService
 
     public async Task<bool> DeleteAsync(string fileIdentifier)
     {
-        var docClient = await FindContainerClientAsync(fileIdentifier);
+        IBlobContainerClient docClient = await FindContainerClientAsync(fileIdentifier);
         return docClient.BinaryFileInfo().Delete();
     }
 
     public async Task<IBinaryFileInfo> BinaryFileInfoAsync(string fileIdentifier)
     {
-        var docClient = await FindContainerClientAsync(fileIdentifier);
+        IBlobContainerClient docClient = await FindContainerClientAsync(fileIdentifier);
         return docClient.BinaryFileInfo();
     }
 
@@ -84,7 +86,7 @@ public class BlobStorageService : IBinaryStorageService
         try
         {
             // Create the root container or handle the exception if it already exists
-            var container = await client.CreateIfNotExistsAsync("$root");
+            string container = await client.CreateIfNotExistsAsync("$root");
             if (!string.IsNullOrEmpty(container))
             {
                 logger.LogInformation<BlobStorageService>($"Created root container for {client.AccountName}: {container}");
@@ -115,8 +117,8 @@ public class BlobStorageService : IBinaryStorageService
                 return "Client has no account";
             }
             // try to connect
-            var blobClient = client.GetBlobContainerClient("$root", string.Empty);
-            var exists = blobClient.ContainerExists();
+            IBlobContainerClient blobClient = client.GetBlobContainerClient("$root", string.Empty);
+            bool exists = blobClient.ContainerExists();
             if (!exists)
             {
                 await CreateRootContainerAsync();
@@ -134,7 +136,7 @@ public class BlobStorageService : IBinaryStorageService
 
     public async Task<bool> DocumentExistsAsync(string fileIdentifier)
     {
-        var docClient = await FindContainerClientAsync(fileIdentifier);
+        IBlobContainerClient docClient = await FindContainerClientAsync(fileIdentifier);
         if (!docClient.ContainerExists())
         {
             return false;

@@ -1,4 +1,4 @@
-﻿namespace N2.Documents;
+namespace N2.Documents;
 
 /// <summary>
 /// Abstraction for a binary file reader.
@@ -14,10 +14,11 @@ public interface IBinaryFileInfo
     /// <summary>
     /// Upload the stream to the storage and return a hash of the content.
     /// </summary>
-    /// <param name="data">Binary stream.</param>
+    /// <param name="data">
+    /// Binary stream.
+    /// </param>
     /// <returns>
-    /// MD5 hash for the content so when retrieving the data,
-    /// you can validate if the content was modifiued.
+    /// MD5 hash for the content so when retrieving the data, you can validate if the content was modifiued.
     /// </returns>
     Task<string> UploadAsync(Stream data);
 

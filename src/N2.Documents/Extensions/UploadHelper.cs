@@ -1,4 +1,4 @@
-﻿namespace N2.Documents.Extensions;
+namespace N2.Documents.Extensions;
 
 public static class UploadHelper
 {
@@ -19,7 +19,7 @@ public static class UploadHelper
             return string.Empty;
         }
 
-        var extension = extensionArg.ToUpperInvariant();
+        string extension = extensionArg.ToUpperInvariant();
 
         if (imageExtensions.Contains(extension))
         {
@@ -71,8 +71,8 @@ public static class UploadHelper
 
     public static bool IsValidExtension(string filename)
     {
-        var fi = new FileInfo(filename);
-        var ext = fi.Extension.ToUpperInvariant();
+        FileInfo fi = new(filename);
+        string ext = fi.Extension.ToUpperInvariant();
 
         if (imageExtensions.Contains(ext))
         {

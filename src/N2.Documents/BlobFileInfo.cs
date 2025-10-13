@@ -1,6 +1,8 @@
-﻿using Azure;
+using Azure;
 using Azure.Storage.Blobs;
+
 using Microsoft.AspNetCore.StaticFiles;
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace N2.Documents;

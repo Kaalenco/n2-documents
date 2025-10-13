@@ -1,8 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
+
 using N2.Core;
+using N2.Core.Dms;
 using N2.Core.Identity;
 using N2.Documents.Extensions;
-using System.Diagnostics.CodeAnalysis;
 
 namespace N2.Documents;
 
@@ -30,19 +31,20 @@ public class DocumentService : IDocumentService
 
     public async Task<(bool success, string message)> DeleteDocumentAsync(Guid documentIdentifier)
     {
-        var document = await docRepository.FindDocumentAsync(documentIdentifier, false);
+        CancellationToken token = CancellationToken.None;
+        Document document = await docRepository.FindDocumentAsync(documentIdentifier, false, token);
         if (document == null)
         {
             return (false, "Document not found");
         }
 
-        if (document.IsPrivate && document.CreatedBy == userContext.UserId)
+        if (document.IsPrivate && document.CreatedBy == userContext.PublicId)
         {
             // delete is allowed for a document that is private an created by the current user
         }
         else
         {
-            var userIsAdmin = userContext.IsAdmin();
+            bool userIsAdmin = userContext.IsAdmin();
             if (!userIsAdmin)
             {
                 if (document.IsPrivate)
@@ -58,7 +60,8 @@ public class DocumentService : IDocumentService
         document.IsEnabled = false;
         document.IsRemoved = true;
         document.Removed = DateTime.UtcNow;
-        var updated = await docRepository.CompleteAsync(userContext);
+        docRepository.SaveDocument(document);
+        int updated = await docRepository.CompleteAsync(userContext, token);
         logService.LogInformation<DocumentService>($"Document {documentIdentifier} deleted");
         return (updated > 0, "Document deleted");
     }
@@ -67,7 +70,7 @@ public class DocumentService : IDocumentService
     {
         ArgumentNullException.ThrowIfNull(search);
         ArgumentNullException.ThrowIfNull(forRoles);
-        var docQuery = string.IsNullOrEmpty(search)
+        IQueryable<Document> docQuery = string.IsNullOrEmpty(search)
             ? docRepository.DocumentQuery.Where(d => !d.IsRemoved)
             : docRepository.DocumentQuery.Where(d => !d.IsRemoved && (d.Remarks.Contains(search) || d.OriginalName.Contains(search)));
 
@@ -80,29 +83,43 @@ public class DocumentService : IDocumentService
         {
             docQuery = docQuery.Where(d => d.IsEnabled);
         }
-        var userId = userContext.UserId;
-        var userIsAdmin = userContext.IsAdmin();
-        var documents = await docQuery
-            .OrderByDescending(d => d.Created)
-            .ToArrayAsync();
-
-        var result = new List<DocumentInformation>();
-        foreach (var document in documents)
+        Guid userId = userContext.PublicId;
+        bool userIsAdmin = userContext.IsAdmin();
+        IOrderedQueryable<Document> documentQuery = docQuery.OrderByDescending(d => d.Created);
+        Document[] documents;
+        IAsyncEnumerable<Document>? docQueryAsync = documentQuery as IAsyncEnumerable<Document>;
+        if (docQueryAsync != null)
         {
-            var documentRoles = (document.Roles ?? "").Split(';');
-            foreach (var role in forRoles)
+            List<Document> docList = new();
+            IAsyncEnumerator<Document> enumerator = docQueryAsync.GetAsyncEnumerator();
+            while (await enumerator.MoveNextAsync())
+            {
+                docList.Add(enumerator.Current);
+            }
+            documents = docList.ToArray();
+        }
+        else
+        {
+            documents = [.. documentQuery];
+        }
+
+        List<DocumentInformation> result = new();
+        foreach (Document? document in documents)
+        {
+            string[] documentRoles = document.Roles ?? [];
+            foreach (string role in forRoles)
             {
                 if (userIsAdmin
                     || (!document.IsPrivate && documentRoles.Contains(role))
                     || (document.IsPrivate && document.CreatedBy == userId))
                 {
-                    var documentInfo = new DocumentInformation
+                    DocumentInformation documentInfo = new()
                     {
                         PublicId = document.PublicId,
                         IsEnabled = document.IsEnabled,
                         DocumentIdentifier = document.Location,
-                        Roles = (document.Roles ?? "").Split(';'),
-                        Tags = (document.Tags ?? "").Split(';'),
+                        Roles = document.Roles ?? [],
+                        Tags = document.Tags ?? [],
                         FileName = document.OriginalName,
                         Extension = document.Extension,
                         Created = document.Created,
@@ -121,15 +138,16 @@ public class DocumentService : IDocumentService
 
     public async Task<(bool success, DocumentInformation document)> GetDocumentInformationAsync(Guid documentIdentifier)
     {
-        var userIsAdmin = userContext.IsAdmin();
+        CancellationToken token = CancellationToken.None;
+        bool userIsAdmin = userContext.IsAdmin();
         Document? document;
         if (userIsAdmin)
         {
-            document = await docRepository.FindDocumentAsync(documentIdentifier);
+            document = await docRepository.FindDocumentAsync(documentIdentifier, token);
         }
         else
         {
-            document = await docRepository.FindDocumentAsync(documentIdentifier, false, false, true);
+            document = await docRepository.FindDocumentAsync(documentIdentifier, false, false, true, token);
         }
 
         if (document == null)
@@ -137,13 +155,13 @@ public class DocumentService : IDocumentService
             return (false, new DocumentInformation());
         }
 
-        var result = new DocumentInformation
+        DocumentInformation result = new()
         {
             PublicId = document.PublicId,
             IsEnabled = document.IsEnabled,
             DocumentIdentifier = document.Location ?? "",
-            Roles = (document.Roles ?? "").Split(';'),
-            Tags = (document.Tags ?? "").Split(';'),
+            Roles = document.Roles ?? [],
+            Tags = document.Tags ?? [],
             FileName = document.OriginalName ?? "",
             Extension = document.Extension ?? "",
             Created = document.Created,
@@ -162,41 +180,42 @@ public class DocumentService : IDocumentService
         ArgumentNullException.ThrowIfNull(streamedFileContent);
         ArgumentException.ThrowIfNullOrWhiteSpace(formData.ProcessName);
 
-        var fileGuid = Guid.NewGuid();
-        var targetPath = Path.Combine("Data", formData.ProcessName);
-        var untrustedFileNameForStorage = formData.FileName;
-        var fileExtension = untrustedFileNameForStorage.Substring(untrustedFileNameForStorage.LastIndexOf('.'));
-        var contentType = UploadHelper.ExtensionType(fileExtension);
-        var newFileName = string.Concat(fileGuid.ToString(), fileExtension);
-        var savePath = await storageService.CreateSavePathAsync(targetPath, fileGuid).ConfigureAwait(false);
+        Guid fileGuid = Guid.NewGuid();
+        CancellationToken token = CancellationToken.None;
+        string targetPath = Path.Combine("Data", formData.ProcessName);
+        string untrustedFileNameForStorage = formData.FileName;
+        string fileExtension = untrustedFileNameForStorage.Substring(untrustedFileNameForStorage.LastIndexOf('.'));
+        string contentType = UploadHelper.ExtensionType(fileExtension);
+        string newFileName = string.Concat(fileGuid.ToString(), fileExtension);
+        string savePath = await storageService.CreateSavePathAsync(targetPath, fileGuid);
 
         // Document identifier does not contain targetpath
-        var documentStorage = Path.Combine(savePath, newFileName);
-        var documentIdentifier = Path.Combine(savePath, newFileName)[(targetPath.Length + 1)..];
+        string documentStorage = Path.Combine(savePath, newFileName);
+        string documentIdentifier = Path.Combine(savePath, newFileName)[(targetPath.Length + 1)..];
 
         logService.LogDebug<DocumentService>($"Saving file: {documentIdentifier}");
 
-        var metaData = new Dictionary<string, string>
+        Dictionary<string, string> metaData = new()
         {
             { "OriginalFileName", untrustedFileNameForStorage },
-            { "UserId", userContext.UserId.ToString() },
+            { "UserId", userContext.PublicId.ToString() },
             { "DcmiType", formData.DcmiType.ToString() },
             { "ContentType", contentType }
         };
         await storageService.CreateDocumentAsync(streamedFileContent, documentStorage, metaData);
 
-        var file = new Document()
+        Document file = new()
         {
             Location = documentIdentifier,
             ExtensionGroup = contentType,
             Extension = fileExtension,
             OriginalName = untrustedFileNameForStorage,
             Remarks = formData.Remarks,
-            Roles = string.Join(';', GetValidRoles(formData)),
-            Tags = string.Join(';', GetValidTags(formData)),
+            Roles = [.. GetValidRoles(formData)],
+            Tags = [.. GetValidTags(formData)],
             Size = (int)streamedFileContent.Length,
             Created = DateTime.UtcNow,
-            CreatedBy = userContext.UserId,
+            CreatedBy = userContext.PublicId,
             IsPrivate = true,
             IsEnabled = formData.IsEnabled,
             ProcessName = formData.ProcessName,
@@ -204,11 +223,11 @@ public class DocumentService : IDocumentService
         };
 
         docRepository.SaveDocument(file);
-        var update = await docRepository.CompleteAsync(userContext);
+        int update = await docRepository.CompleteAsync(userContext, token);
         return new(update > 0, new DocumentInformation
         {
             DocumentIdentifier = file.Location,
-            Roles = file.Roles.Split(';'),
+            Roles = [.. file.Roles],
             FileName = file.OriginalName,
             Extension = file.Extension,
             Created = file.Created,
@@ -223,15 +242,16 @@ public class DocumentService : IDocumentService
         Guid documentIdentifier,
         [NotNull] DocumentInformation formData)
     {
-        var userIsAdmin = userContext.IsAdmin();
+        CancellationToken token = CancellationToken.None;
+        bool userIsAdmin = userContext.IsAdmin();
         Document? document;
         if (userIsAdmin)
         {
-            document = await docRepository.FindDocumentAsync(documentIdentifier);
+            document = await docRepository.FindDocumentAsync(documentIdentifier, token);
         }
         else
         {
-            document = await docRepository.FindDocumentAsync(documentIdentifier, false, userContext.UserId);
+            document = await docRepository.FindDocumentAsync(documentIdentifier, false, userContext.PublicId, token);
         }
         if (document == null)
         {
@@ -239,15 +259,16 @@ public class DocumentService : IDocumentService
         }
         document.Remarks = formData.Remarks;
         document.IsEnabled = formData.IsEnabled;
-        document.Roles = string.Join(';', GetValidRoles(formData));
-        var updateCount = await docRepository.CompleteAsync(userContext).ConfigureAwait(false);
+        document.Roles = [.. GetValidRoles(formData)];
+        docRepository.SaveDocument(document);
+        int updateCount = await docRepository.CompleteAsync(userContext, token);
 
-        var result = new DocumentInformation
+        DocumentInformation result = new()
         {
             PublicId = document.PublicId,
             IsEnabled = document.IsEnabled,
             DocumentIdentifier = document.Location ?? "",
-            Roles = (document.Roles ?? "").Split(';'),
+            Roles = document.Roles ?? [],
             FileName = document.OriginalName ?? "",
             Extension = document.Extension ?? "",
             Created = document.Created,
@@ -260,10 +281,10 @@ public class DocumentService : IDocumentService
 
     private static List<string> GetValidTags(DocumentInformation formData)
     {
-        var validTags = new List<string>();
-        foreach (var tag in formData.Tags)
+        List<string> validTags = new();
+        foreach (string tag in formData.Tags)
         {
-            var tagNormalized = tag.Trim().ToUpperInvariant();
+            string tagNormalized = tag.Trim().ToUpperInvariant();
             if (!string.IsNullOrWhiteSpace(tagNormalized))
             {
                 validTags.Add(tagNormalized);
@@ -275,10 +296,10 @@ public class DocumentService : IDocumentService
 
     private List<string> GetValidRoles(DocumentInformation formData)
     {
-        var validRoles = new List<string>();
-        foreach (var role in formData.Roles)
+        List<string> validRoles = new();
+        foreach (string role in formData.Roles)
         {
-            var roleNormalized = role.Trim().ToUpperInvariant();
+            string roleNormalized = role.Trim().ToUpperInvariant();
             if (settings.ValidRoles.Contains(roleNormalized))
             {
                 validRoles.Add(roleNormalized);

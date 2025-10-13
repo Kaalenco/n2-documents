@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>12</LangVersion>
@@ -28,11 +28,11 @@
 
     <Title>N2-Documents</Title>
     <Company>Kaalenco</Company>
-    <Copyright>(c) 2024 - rights reserved</Copyright>
+    <Copyright>(c) 2025 - rights reserved</Copyright>
     <Authors>gjkaal</Authors>
     <Description>Dociument management and process information services</Description>
     <IncludeSymbols>False</IncludeSymbols>
-    <PackageVersion>1.0.10-pre0807</PackageVersion>
+    <PackageVersion>1.1.0</PackageVersion>
     <PackageLicenseExpression>AFL-3.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/kaalenco/n2-logging</PackageProjectUrl>
     <PackageId>N2.Documents</PackageId>
@@ -41,8 +41,8 @@
     <PackageType>Dependency</PackageType>
     <Product>N2.Core for NET8.0</Product>
     <ProductName>N2.DocumentManagement</ProductName>
-    <ProductVersion>1.0.0</ProductVersion>
-    <Version>1.24.0807</Version>
+    <ProductVersion>1.1.0</ProductVersion>
+    <Version>1.25.1010</Version>
 
     <RootNamespace>N2.Documents</RootNamespace>
     <UserSecretsId>N2-Core-0c368d89-5cb3-4451-9c68-b79e69920a09</UserSecretsId>
@@ -56,55 +56,12 @@
   <ItemGroup>
     <None Include="readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="N2.Core.Abstractions" Version="1.0.9" />
-    <PackageReference Include="N2.Core.Identity.Abstractions" Version="1.0.9" />
-    <PackageReference Include="N2.Documents.Abstractions" Version="1.0.10" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.21.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.7" />
-  </ItemGroup>
 
-  <ItemGroup Label="Analyzers">
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="4.10.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Roslynator.Analyzers" Version="4.12.4">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="4.12.4">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.12.4">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="9.30.0.95878">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="AsyncFixer" Version="1.6.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="8.0.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Analyzers" Version="8.0.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.3.0" />
+    <PackageReference Include="N2.Core.Abstractions" Version="1.4.3" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.25.1" />
+    <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
   </ItemGroup>
 </Project>
