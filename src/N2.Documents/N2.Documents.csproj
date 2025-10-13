@@ -32,7 +32,8 @@
     <Authors>gjkaal</Authors>
     <Description>Dociument management and process information services</Description>
     <IncludeSymbols>False</IncludeSymbols>
-    <PackageVersion>1.1.0</PackageVersion>
+    <PackageVersion>2.0.0</PackageVersion>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
     <PackageLicenseExpression>AFL-3.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/kaalenco/n2-logging</PackageProjectUrl>
     <PackageId>N2.Documents</PackageId>
@@ -41,8 +42,8 @@
     <PackageType>Dependency</PackageType>
     <Product>N2.Core for NET8.0</Product>
     <ProductName>N2.DocumentManagement</ProductName>
-    <ProductVersion>1.1.0</ProductVersion>
-    <Version>1.25.1010</Version>
+    <ProductVersion>2.0.0</ProductVersion>
+    <Version>2.25.1013</Version>
 
     <RootNamespace>N2.Documents</RootNamespace>
     <UserSecretsId>N2-Core-0c368d89-5cb3-4451-9c68-b79e69920a09</UserSecretsId>
