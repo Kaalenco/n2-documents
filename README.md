@@ -2,6 +2,8 @@
 
 A comprehensive document management library for .NET 9.0 applications using Azure Blob Storage and Azure Table Storage.
 
+[![.NET Build and test](https://github.com/Kaalenco/n2-documents/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Kaalenco/n2-documents/actions/workflows/dotnet.yml)
+
 ## Overview
 
 N2.Documents provides a production-ready document management solution with enterprise features including:
