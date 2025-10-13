@@ -333,11 +333,17 @@ public class WithDocumentService
         };
 
         _userContextMock.Setup(u => u.PublicId).Returns(userId);
-        _storageServiceMock.Setup(s => s.CreateSavePathAsync("Data\\TestProcess", It.IsAny<Guid>()))
-            .ReturnsAsync("Data\\TestProcess\\subfolder");
+
+        // Use Path.Combine to make the test OS-agnostic (fix for Strict mock failure on non-Windows).
+        var expectedBasePath = Path.Combine("Data", "TestProcess");
+        _storageServiceMock
+            .Setup(s => s.CreateSavePathAsync(expectedBasePath, It.IsAny<Guid>()))
+            .ReturnsAsync(Path.Combine(expectedBasePath, "subfolder"));
+
         _storageServiceMock.Setup(s => s.CreateDocumentAsync(
             It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<Dictionary<string, string>>()))
             .ReturnsAsync((new Uri("https://test.blob/doc"), "hash123"));
+
         _docRepositoryMock.Setup(r => r.CompleteAsync(_userContextMock.Object, token)).ReturnsAsync(1);
 
         var (success, info) = await _sut.SaveDocumentAsync(stream, form);
